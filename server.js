@@ -7,6 +7,7 @@ const databaseConnect = require('./config/databaseConnect')
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const errorHandler = require('./middleware/errorHandler');
+const authRouter = require('./routes/authRoutes');
 app.use(cookieParser());
 
 app.use(express.json());
@@ -19,6 +20,8 @@ app.set("trust proxy", 1);
 app.use(cors({
   origin: [
     "http://localhost:5173", // local frontend , if i comment this line then no issue will in deployee
+    "http://localhost:5174",
+    "http://localhost:5175",
     "https://profilegen-cv-maker-frontend.vercel.app" // deployed frontend
   ],
   credentials: true,
@@ -30,6 +33,7 @@ app.use(cors({
 
 app.use("/uploads", express.static("uploads"));
 app.use('/', cvRouter);
+app.use('/', authRouter);
 app.use('/admin', adminRouter);
 
 app.post('/test-body', (req, res) => {

@@ -9,7 +9,7 @@ const updateUserCvTitle = async (req,res)=>{
         }
 
         await CVmodel.findByIdAndUpdate(cvId, { title: newTitle });
-        res.status(200).json({ success: true, message: "CV title updated successfully" });
+        res.status(200).json({ success: true, message: "CV title updated successfully"});
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
     }
