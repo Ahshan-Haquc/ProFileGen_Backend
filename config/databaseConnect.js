@@ -6,6 +6,6 @@ const databaseConnect=async ()=>{
             useUnifiedTopology: true,
         })
     .then(()=>(console.log("Database connected with cloud")))
-    .catch((err)=>(console.log("Not conneted with database.")));
+    .catch((err)=>(console.log("Not conneted with database.",err)));
 }
 module.exports=databaseConnect;
