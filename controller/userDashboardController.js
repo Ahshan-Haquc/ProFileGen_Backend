@@ -18,4 +18,17 @@ const getUserDashboardAllData = async (req, res)=>{
     }
 }
 
-module.exports = { getUserDashboardAllData }
+const viewCv = async (req, res, next) => {
+  try {
+    const userCV = await CVmodel.findOne({ userId: req.body.userId });
+    if (!userCV) {
+      res.status(400).json({ message: "User CV not found" });
+    }
+    res.status(200).json({ userCV });
+  } catch (error) {
+    console.log("Error in server : ", error);
+    next(error);
+  }
+}
+
+module.exports = { getUserDashboardAllData, viewCv }

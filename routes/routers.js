@@ -12,28 +12,26 @@ const upload = require("../config/upload")
 
 const { addNewSection, deleteSection, addSectionValue, deleteSectionValue } = require('../controller/addContent');
 const { updateUserCvTitle, fetchUserDashboardData, createNewCv, deleteUserCv, toggleFavorite, fetchFavoriteCVsOnly, fetchCurrentWorkingCV } = require('../controller/userController');
-const { deleteSectionData } = require('../controller/HomeControll');
-const { getUserDashboardAllData } = require('../controller/userDashboardController');
+const { deleteSectionData, updateDescription, updateUserContact, updateUserSkills, updateUserProjects, updateUserProfile } = require('../controller/HomeControll');
+const { getUserDashboardAllData, viewCv } = require('../controller/userDashboardController');
+
+
 
 cvRouter.get("/getUserDashboardAllData", userAccessPermission, getUserDashboardAllData);
 
+cvRouter.get("/fetchUserDashboardData", userAccessPermission, fetchUserDashboardData)
+cvRouter.get("/createUserNewCv", userAccessPermission, createNewCv)
+cvRouter.get("/fetchFavoriteCVsOnly", userAccessPermission, fetchFavoriteCVsOnly)
+cvRouter.delete("/deleteUserCv/:cvId", userAccessPermission, deleteUserCv)
+cvRouter.patch("/toggleFavorite/:cvId", userAccessPermission, toggleFavorite)
+cvRouter.get("/fetchCurrentWorkingCV/:cvId", userAccessPermission, fetchCurrentWorkingCV)
+
 
 //for fetch user cv
-cvRouter.post("/viewCV", async (req, res, next) => {
-  try {
-    const userCV = await CVmodel.findOne({ userId: req.body.userId });
-    if (!userCV) {
-      res.status(400).json({ message: "User CV not found" });
-    }
-    res.status(200).json({ userCV });
-  } catch (error) {
-    console.log("Error in server : ", error);
-    next(error);
-  }
-})
+cvRouter.post("/viewCV", viewCv)
 
 
-// -------------user dashboard activities---------------
+// user dashboard activities
 cvRouter.patch("/updateUserCvTitle", userAccessPermission, updateUserCvTitle);
 //update user profile info including image
 
@@ -82,139 +80,18 @@ cvRouter.patch("/updateUserCvTitle", userAccessPermission, updateUserCvTitle);
 // });
 
 // ---jodi cloud storage use kori image store korar jonno---------
-cvRouter.post("/updateUserProfile", upload.single("photo"), async (req, res) => {
-  try {
-    const { userId, name, profession } = req.body;
-
-    if (!userId || !name || !profession) {
-      return res.status(400).json({ message: "All fields required" });
-    }
-
-    let updateData = { name, profession };
-
-    if (req.file && req.file.path) {
-      // Cloudinary auto provides a secure URL in req.file.path
-      updateData.images = req.file.path;
-    }
-
-    await CVmodel.updateOne(
-      { userId },
-      { $set: updateData },
-      { upsert: true }
-    );
-
-    res.status(200).json({ message: "Profile updated successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+cvRouter.post("/updateUserProfile", upload.single("photo"), updateUserProfile);
 
 //update user description
-cvRouter.post("/updateUserDescription", async (req, res, next) => {
-
-  try {
-    const { cvId, userDescription } = req.body;
-    if (!cvId || !userDescription) {
-      return res.status(400).json({ message: "Input field not filled" });
-    }
-    await CVmodel.updateOne(
-      { _id: cvId },
-      {
-        $set: {
-          description: userDescription
-        }
-      }
-    )
-    res.status(200).json({ success: true, message: "Your description updated succesfully." });
-  } catch (error) {
-    next(error);
-  }
-})
+cvRouter.post("/updateUserDescription", updateDescription)
 //update user contact
-cvRouter.post("/updateUserContact", async (req, res, next) => {
-  try {
-    const {
-      cvId,
-      phoneNumber,
-      emailId,
-      linkedInId,
-      githubId,
-      portfolioLink,
-      address
-    } = req.body;
-
-    if (
-      !cvId ||
-      !phoneNumber ||
-      !emailId ||
-      !linkedInId ||
-      !githubId ||
-      !portfolioLink ||
-      !address
-    ) {
-      return res.status(401).json({ message: "Input field not filled" });
-    }
-
-    await CVmodel.updateOne(
-      { _id: cvId },
-      {
-        $set: {
-          phoneNumber,
-          emailId,
-          linkedInId,
-          githubId,
-          portfolioLink,
-          address
-        }
-      }
-    );
-    res.status(200).json({ success: true, message: "Your contact updated succesfully." });
-  } catch (error) {
-    next(error);
-  }
-});
+cvRouter.post("/updateUserContact", updateUserContact);
 //update user skills
-cvRouter.post("/updateUserSkills", async (req, res) => {
-  const { cvId, skills } = req.body;
-
-  try {
-    const userCV = await CVmodel.findOne({ _id: cvId });
-
-    if (!userCV) {
-      return res.status(404).json({ message: "User CV not found" });
-    }
-
-    userCV.skills = skills;
-
-    await userCV.save();
-
-    return res.status(200).json({ message: "Skills updated", updatedCV: userCV });
-  } catch (error) {
-    console.error("Error updating skills:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
+cvRouter.post("/updateUserSkills", updateUserSkills);
 
 
 //update or delete user projects
-cvRouter.post("/updateUserProjects", async (req, res, next) => {
-  try {
-    const { cvId, projectName, projectDescription, projectToolsAndTechnologies } = req.body;
-    if (!cvId || !projectName || !projectDescription || !projectToolsAndTechnologies) {
-      return res.status(401).json({ message: "Input field not filled" });
-    }
-    const userCV = await CVmodel.findOne({ _id: cvId });
-    if (!userCV) {
-      return res.status(400).json({ message: "User cv not found" });
-    }
-    userCV.projects.push({ projectName, projectDescription, projectToolsAndTechnologies });
-    await userCV.save();
-    res.status(200).json({ updatedCV: userCV, message: "Your project updated succesfully." });
-  } catch (error) {
-    next(error);
-  }
-})
+cvRouter.post("/updateUserProjects", updateUserProjects)
 
 //update user experience
 cvRouter.post("/updateUserExperience", async (req, res, next) => {
@@ -415,11 +292,5 @@ cvRouter.post("/deleteSectionValue", userAccessPermission, deleteSectionValue);
 
 cvRouter.post("/deleteMainSectionContentInside", userAccessPermission, deleteSectionData)
 
-cvRouter.get("/fetchUserDashboardData", userAccessPermission, fetchUserDashboardData)
-cvRouter.get("/createUserNewCv", userAccessPermission, createNewCv)
-cvRouter.get("/fetchFavoriteCVsOnly", userAccessPermission, fetchFavoriteCVsOnly)
-cvRouter.delete("/deleteUserCv/:cvId", userAccessPermission, deleteUserCv)
-cvRouter.patch("/toggleFavorite/:cvId", userAccessPermission, toggleFavorite)
-cvRouter.get("/fetchCurrentWorkingCV/:cvId", userAccessPermission, fetchCurrentWorkingCV)
 
 module.exports = cvRouter;
