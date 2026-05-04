@@ -1,10 +1,15 @@
+const UserModel = require("../models/userSchema");
+
 const checkCVLimit = async (req, res, next) => {
   try {
     const user = req.userInfo; // from auth middleware 
 
     // Starter Plan (free)
     if (user.subscription.plan === "starter") {
-      if (user.subscription.cvUsed >= 3) {
+      if (user.subscription.cvUsed >= 3 || user.subscription.isTrialUsed) {
+        const userInfo = await UserModel.findById(user._id);
+        userInfo.subscription.isTrialUsed = true;
+        await userInfo.save();
         return res.status(200).json({
           success:false,
           message: "Free limit reached. Upgrade your plan.",
@@ -18,6 +23,18 @@ const checkCVLimit = async (req, res, next) => {
         success:false,
         message: "Monthly limit reached. Upgrade your plan",
       });
+    }
+
+    const now = new Date();
+
+    if (
+      user.subscription.expiresAt &&
+      user.subscription.expiresAt < now
+    ) {
+        return res.status(200).json({
+            success:false,
+            message: "Subscription expired. Upgrade your plan.",
+        });
     }
 
     next();

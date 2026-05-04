@@ -45,8 +45,12 @@ const UserSchema = mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      subscribedAt: {
+        type: Date, 
+        default: Date.now(),
+      },
       expiresAt: {
-        type: Date, // optional (for monthly reset)
+        type: Date, 
       },
     },
     tokens: [
