@@ -21,7 +21,7 @@ const checkCVLimit = require('../middleware/checkCvLimit');
 cvRouter.get("/getUserDashboardAllData", userAccessPermission, getUserDashboardAllData);
 
 cvRouter.get("/fetchUserDashboardData", userAccessPermission, fetchUserDashboardData)
-cvRouter.get("/createUserNewCv", userAccessPermission, checkCVLimit, createNewCv)
+cvRouter.post("/createUserNewCv", userAccessPermission, checkCVLimit, createNewCv)
 cvRouter.get("/fetchFavoriteCVsOnly", userAccessPermission, fetchFavoriteCVsOnly)
 cvRouter.delete("/deleteUserCv/:cvId", userAccessPermission, deleteUserCv)
 cvRouter.patch("/toggleFavorite/:cvId", userAccessPermission, toggleFavorite)

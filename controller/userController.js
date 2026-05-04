@@ -30,6 +30,7 @@ const fetchUserDashboardData = async (req, res)=>{
 
 const createNewCv = async (req, res) => {
     try {
+        console.log("working here");
         const user = await UserModel.findById(req.userInfo._id);
         if(!user){
             return res.status(404).json({ success: false, message: "User not found" });
