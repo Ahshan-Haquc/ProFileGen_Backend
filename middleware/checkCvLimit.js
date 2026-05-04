@@ -1,6 +1,6 @@
 const checkCVLimit = async (req, res, next) => {
   try {
-    const user = req.user; // from auth middleware
+    const user = req.userInfo; // from auth middleware
 
     // Starter Plan (free)
     if (user.subscription.plan === "starter") {
@@ -16,7 +16,7 @@ const checkCVLimit = async (req, res, next) => {
     if (user.subscription.cvUsed >= user.subscription.cvLimit) {
       return res.status(403).json({
         success:false,
-        message: "Monthly limit reached.",
+        message: "Monthly limit reached. Upgrade your plan",
       });
     }
 
