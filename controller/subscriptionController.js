@@ -47,7 +47,7 @@ const createCheckoutSession = async (req, res) => {
                 },
             ],
 
-            success_url: `http://localhost:5173/success?plan=${plan}`,
+            success_url: `http://localhost:5173/success-subscription?plan=${plan}`,
             cancel_url: `http://localhost:5173/my-pricing`,
 
         });
