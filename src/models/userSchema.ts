@@ -1,7 +1,33 @@
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
+import mongoose, { Model, Document } from "mongoose";
+import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
+import type { StringValue } from "ms";
 
-const UserSchema = mongoose.Schema(
+export interface ISubscription {
+  plan: "starter" | "pro" | "elite";
+  cvLimit: number;
+  cvUsed: number;
+  isTrialUsed: boolean;
+  subscribedAt: Date;
+  expiresAt?: Date;
+}
+
+export interface IUser {
+  name: string;
+  email: string;
+  password: string;
+  role: "user" | "admin";
+  status: "active" | "inactive" | "blocked";
+  subscription: ISubscription;
+  tokens: { token: string }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IUserDoc extends IUser, Document {
+  generateToken(): Promise<string>;
+}
+
+const UserSchema = new mongoose.Schema<IUserDoc>(
   {
     name: {
       type: String,
@@ -35,7 +61,7 @@ const UserSchema = mongoose.Schema(
       },
       cvLimit: {
         type: Number,
-        default: 3, // starter limit 3 which if free
+        default: 3,
       },
       cvUsed: {
         type: Number,
@@ -46,11 +72,11 @@ const UserSchema = mongoose.Schema(
         default: false,
       },
       subscribedAt: {
-        type: Date, 
-        default: Date.now(),
+        type: Date,
+        default: Date.now,
       },
       expiresAt: {
-        type: Date, 
+        type: Date,
       },
     },
     tokens: [
@@ -62,17 +88,20 @@ const UserSchema = mongoose.Schema(
   { timestamps: true }
 );
 
-// generating JWT token
-UserSchema.methods.generateToken = async function () {
+UserSchema.methods.generateToken = async function (): Promise<string> {
   try {
+    const tokenSecret: Secret = process.env.JWT_SECRET ?? "ahsanSecretKey8765";
+    const expiresIn: StringValue = (process.env.JWT_EXPIRATION ?? "1h") as StringValue;
+    const tokenOptions: SignOptions = { expiresIn };
+
     const userToken = jwt.sign(
       {
         _id: this._id.toString(),
         email: this.email,
         role: this.role,
       },
-      process.env.JWT_SECRET || "ahsanSecretKey8765",
-      { expiresIn: process.env.JWT_EXPIRATION || "1h" }
+      tokenSecret,
+      tokenOptions
     );
 
     this.tokens.push({ token: userToken });
@@ -85,5 +114,6 @@ UserSchema.methods.generateToken = async function () {
   }
 };
 
-const UserModel = mongoose.model("User", UserSchema);
-module.exports = UserModel;
+const UserModel = mongoose.model<IUserDoc>("User", UserSchema);
+export default UserModel;
+

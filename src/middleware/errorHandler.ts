@@ -1,8 +1,9 @@
-// Custom Error Handler Middleware
-const errorHandler = (err, req, res, next) => {
+import type { ErrorRequestHandler } from "express";
+
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   const statusCode = res.statusCode ? res.statusCode : 500;
 
-  const errorMessages = {
+  const errorMessages: Record<number, string> = {
     400: "Your request could not be processed because some required information is missing or invalid.",
     401: "You are not authorized. Please log in with valid credentials to access this resource.",
     403: "You do not have permission to access this resource.",
@@ -19,4 +20,5 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-module.exports = errorHandler;
+export default errorHandler;
+
