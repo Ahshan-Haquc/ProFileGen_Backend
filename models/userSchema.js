@@ -11,7 +11,7 @@ const UserSchema = mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true, 
+      unique: true,
     },
     password: {
       type: String,
@@ -26,6 +26,32 @@ const UserSchema = mongoose.Schema(
       type: String,
       enum: ["active", "inactive", "blocked"],
       default: "active",
+    },
+    subscription: {
+      plan: {
+        type: String,
+        enum: ["starter", "pro", "elite"],
+        default: "starter",
+      },
+      cvLimit: {
+        type: Number,
+        default: 3, // starter limit 3 which if free
+      },
+      cvUsed: {
+        type: Number,
+        default: 0,
+      },
+      isTrialUsed: {
+        type: Boolean,
+        default: false,
+      },
+      subscribedAt: {
+        type: Date, 
+        default: Date.now(),
+      },
+      expiresAt: {
+        type: Date, 
+      },
     },
     tokens: [
       {

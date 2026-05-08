@@ -8,6 +8,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const errorHandler = require('./middleware/errorHandler');
 const authRouter = require('./routes/authRoutes');
+const subscriptionRouter = require('./routes/subscriptionRoutes');
 app.use(cookieParser());
 
 app.use(express.json());
@@ -35,6 +36,7 @@ app.use("/uploads", express.static("uploads"));
 app.use('/', cvRouter);
 app.use('/', authRouter);
 app.use('/admin', adminRouter);
+app.use('/subscription', subscriptionRouter);
 
 app.post('/test-body', (req, res) => {
   console.log('req.body:', req.body);

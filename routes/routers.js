@@ -12,133 +12,27 @@ const upload = require("../config/upload")
 
 const { addNewSection, deleteSection, addSectionValue, deleteSectionValue } = require('../controller/addContent');
 const { updateUserCvTitle, fetchUserDashboardData, createNewCv, deleteUserCv, toggleFavorite, fetchFavoriteCVsOnly, fetchCurrentWorkingCV } = require('../controller/userController');
-const { deleteSectionData } = require('../controller/HomeControll');
-const { adminSignup } = require('../controller/auth');
+const { deleteSectionData, updateDescription, updateUserContact, updateUserSkills, updateUserProjects, updateUserProfile } = require('../controller/HomeControll');
+const { getUserDashboardAllData, viewCv } = require('../controller/userDashboardController');
+const checkCVLimit = require('../middleware/checkCvLimit');
 
 
-cvRouter.get("/", (req, res, next) => {
-  try {
-    console.log(" to home page.");
-    res.status(200).json({ message: "wel to ho me page." });
-  } catch (error) {
-    next(error);
-  }
-})
 
-cvRouter.post("/userSignup", async (req, res, next) => {
-  console.log("working on singup router 1")
-  try {
-    const { email, password, name } = req.body;
-    if (!email || !password) {
-      return res.status(401).json({ message: "Please enter email or password." })
-    }
+cvRouter.get("/getUserDashboardAllData", userAccessPermission, getUserDashboardAllData);
 
-    const encryptedPassword = await bcrypt.hash(password, 10);
+cvRouter.get("/fetchUserDashboardData", userAccessPermission, fetchUserDashboardData)
+cvRouter.post("/createUserNewCv", userAccessPermission, checkCVLimit, createNewCv)
+cvRouter.get("/fetchFavoriteCVsOnly", userAccessPermission, fetchFavoriteCVsOnly)
+cvRouter.delete("/deleteUserCv/:cvId", userAccessPermission, deleteUserCv)
+cvRouter.patch("/toggleFavorite/:cvId", userAccessPermission, toggleFavorite)
+cvRouter.get("/fetchCurrentWorkingCV/:cvId", userAccessPermission, fetchCurrentWorkingCV)
 
-    const NewUser = new UserModel({
-      email: email, password: encryptedPassword, name: name
-    })
-    const userInfo = await NewUser.save();
-
-
-    res.status(200).json({ message: "Signup succesfull." });
-  } catch (error) {
-    next(error);
-  }
-})
-
-cvRouter.post("/auth/admin/signup", adminSignup)
-
-cvRouter.post("/userLogin", async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await UserModel.findOne({ email });
-    if (!user) return res.status(401).json({ message: "User not found" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: "Invalid password" });
-
-    // Generate JWT token (assumes generateToken includes role info)
-    const token = await user.generateToken();
-
-    // Set token in HTTP-only cookie - eita kaj kore localhost a run krle
-    // res.cookie("userCookie", token, {
-    //   httpOnly: true,
-    //   secure: false, 
-    //   expires: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-    // });
-
-    //eita kaj korbe deploye korle
-    res.cookie("userCookie", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // only true in production
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      expires: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-    });
-
-
-    // Final response with role
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        _id: user._id,
-        email: user.email,
-        role: user.role
-      },
-    });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
-cvRouter.get("/userLogout", userAccessPermission, async (req, res, next) => {
-  console.log("Request recieved in logout router");
-  try {
-    const user = await UserModel.findOne({ _id: req.userInfo._id });
-
-    if (user) {
-      user.tokens = [];
-      await user.save();
-    }
-
-    res.clearCookie("userCookie", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-    });
-
-    return res.status(200).json({ message: "Logout successful" });
-  } catch (error) {
-    console.log("Error in logout router");
-    next(error);
-  }
-});
-
-
-cvRouter.get("/me", userAccessPermission, async (req, res) => {
-  console.log("working on me router")
-  res.status(200).json({ userInfo: req.userInfo });
-});
 
 //for fetch user cv
-cvRouter.post("/viewCV", async (req, res, next) => {
-  try {
-    const userCV = await CVmodel.findOne({ userId: req.body.userId });
-    if (!userCV) {
-      res.status(400).json({ message: "User CV not found" });
-    }
-    res.status(200).json({ userCV });
-  } catch (error) {
-    console.log("Error in server : ", error);
-    next(error);
-  }
-})
+cvRouter.post("/viewCV", viewCv)
 
 
-// -------------user dashboard activities---------------
+// user dashboard activities
 cvRouter.patch("/updateUserCvTitle", userAccessPermission, updateUserCvTitle);
 //update user profile info including image
 
@@ -187,139 +81,18 @@ cvRouter.patch("/updateUserCvTitle", userAccessPermission, updateUserCvTitle);
 // });
 
 // ---jodi cloud storage use kori image store korar jonno---------
-cvRouter.post("/updateUserProfile", upload.single("photo"), async (req, res) => {
-  try {
-    const { userId, name, profession } = req.body;
-
-    if (!userId || !name || !profession) {
-      return res.status(400).json({ message: "All fields required" });
-    }
-
-    let updateData = { name, profession };
-
-    if (req.file && req.file.path) {
-      // Cloudinary auto provides a secure URL in req.file.path
-      updateData.images = req.file.path;
-    }
-
-    await CVmodel.updateOne(
-      { userId },
-      { $set: updateData },
-      { upsert: true }
-    );
-
-    res.status(200).json({ message: "Profile updated successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+cvRouter.post("/updateUserProfile", upload.single("photo"), updateUserProfile);
 
 //update user description
-cvRouter.post("/updateUserDescription", async (req, res, next) => {
-
-  try {
-    const { cvId, userDescription } = req.body;
-    if (!cvId || !userDescription) {
-      return res.status(400).json({ message: "Input field not filled" });
-    }
-    await CVmodel.updateOne(
-      { _id: cvId },
-      {
-        $set: {
-          description: userDescription
-        }
-      }
-    )
-    res.status(200).json({ success: true, message: "Your description updated succesfully." });
-  } catch (error) {
-    next(error);
-  }
-})
+cvRouter.post("/updateUserDescription", updateDescription)
 //update user contact
-cvRouter.post("/updateUserContact", async (req, res, next) => {
-  try {
-    const {
-      cvId,
-      phoneNumber,
-      emailId,
-      linkedInId,
-      githubId,
-      portfolioLink,
-      address
-    } = req.body;
-
-    if (
-      !cvId ||
-      !phoneNumber ||
-      !emailId ||
-      !linkedInId ||
-      !githubId ||
-      !portfolioLink ||
-      !address
-    ) {
-      return res.status(401).json({ message: "Input field not filled" });
-    }
-
-    await CVmodel.updateOne(
-      { _id: cvId },
-      {
-        $set: {
-          phoneNumber,
-          emailId,
-          linkedInId,
-          githubId,
-          portfolioLink,
-          address
-        }
-      }
-    );
-    res.status(200).json({ success: true, message: "Your contact updated succesfully." });
-  } catch (error) {
-    next(error);
-  }
-});
+cvRouter.post("/updateUserContact", updateUserContact);
 //update user skills
-cvRouter.post("/updateUserSkills", async (req, res) => {
-  const { cvId, skills } = req.body;
-
-  try {
-    const userCV = await CVmodel.findOne({ _id: cvId });
-
-    if (!userCV) {
-      return res.status(404).json({ message: "User CV not found" });
-    }
-
-    userCV.skills = skills;
-
-    await userCV.save();
-
-    return res.status(200).json({ message: "Skills updated", updatedCV: userCV });
-  } catch (error) {
-    console.error("Error updating skills:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
+cvRouter.post("/updateUserSkills", updateUserSkills);
 
 
 //update or delete user projects
-cvRouter.post("/updateUserProjects", async (req, res, next) => {
-  try {
-    const { cvId, projectName, projectDescription, projectToolsAndTechnologies } = req.body;
-    if (!cvId || !projectName || !projectDescription || !projectToolsAndTechnologies) {
-      return res.status(401).json({ message: "Input field not filled" });
-    }
-    const userCV = await CVmodel.findOne({ _id: cvId });
-    if (!userCV) {
-      return res.status(400).json({ message: "User cv not found" });
-    }
-    userCV.projects.push({ projectName, projectDescription, projectToolsAndTechnologies });
-    await userCV.save();
-    res.status(200).json({ updatedCV: userCV, message: "Your project updated succesfully." });
-  } catch (error) {
-    next(error);
-  }
-})
+cvRouter.post("/updateUserProjects", updateUserProjects)
 
 //update user experience
 cvRouter.post("/updateUserExperience", async (req, res, next) => {
@@ -520,11 +293,5 @@ cvRouter.post("/deleteSectionValue", userAccessPermission, deleteSectionValue);
 
 cvRouter.post("/deleteMainSectionContentInside", userAccessPermission, deleteSectionData)
 
-cvRouter.get("/fetchUserDashboardData", userAccessPermission, fetchUserDashboardData)
-cvRouter.get("/createUserNewCv", userAccessPermission, createNewCv)
-cvRouter.get("/fetchFavoriteCVsOnly", userAccessPermission, fetchFavoriteCVsOnly)
-cvRouter.delete("/deleteUserCv/:cvId", userAccessPermission, deleteUserCv)
-cvRouter.patch("/toggleFavorite/:cvId", userAccessPermission, toggleFavorite)
-cvRouter.get("/fetchCurrentWorkingCV/:cvId", userAccessPermission, fetchCurrentWorkingCV)
 
 module.exports = cvRouter;
