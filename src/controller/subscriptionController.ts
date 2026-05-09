@@ -27,6 +27,11 @@ const createCheckoutSession = async (req: Request<unknown, unknown, CreateChecko
     return;
   }
 
+  if (!stripe) {
+    res.status(500).json({ success: false, message: "Stripe is not configured. Please set STRIPE_SECRET_KEY." });
+    return;
+  }
+
   let price = 0;
   let planName = "";
 
