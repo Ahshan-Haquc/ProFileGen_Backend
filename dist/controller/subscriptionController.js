@@ -36,6 +36,10 @@ const createCheckoutSession = (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.status(400).json({ success: false, message: "Plan is required" });
         return;
     }
+    if (!stripe_1.default) {
+        res.status(500).json({ success: false, message: "Stripe is not configured. Please set STRIPE_SECRET_KEY." });
+        return;
+    }
     let price = 0;
     let planName = "";
     if (plan === "pro") {
