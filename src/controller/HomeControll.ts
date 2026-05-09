@@ -53,15 +53,33 @@ const updateUserProfile = async (
 
     const updateData: Record<string, unknown> = { name, profession };
 
-    if (req.file && typeof req.file.path === "string") {
-      updateData.images = req.file.path;
+    if (req.file) {
+      const filePath =
+        (req.file as any).path ??
+        (req.file as any).location ??
+        (req.file as any).secure_url ??
+        (req.file as any).url;
+
+      if (typeof filePath === "string") {
+        updateData.images = filePath;
+      }
     }
 
-    await CVmodel.updateOne({ userId }, { $set: updateData }, { upsert: true }).exec();
-    res.status(200).json({ message: "Profile updated successfully" });
+    const updatedCV = await CVmodel.findOneAndUpdate(
+      { userId },
+      { $set: updateData },
+      { new: true, upsert: true }
+    ).exec();
+
+    if (!updatedCV) {
+      res.status(500).json({ success: false, message: "Unable to update profile" });
+      return;
+    }
+
+    res.status(200).json({ success: true, message: "Profile updated successfully", updatedCV });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
