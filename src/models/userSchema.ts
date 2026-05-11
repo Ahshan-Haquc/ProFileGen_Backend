@@ -18,6 +18,9 @@ export interface IUser {
   role: "user" | "admin";
   status: "active" | "inactive" | "blocked";
   subscription: ISubscription;
+  googleId?: string;
+  profileImage?: string;
+  authProvider: "local" | "google";
   tokens: { token: string }[];
   createdAt: Date;
   updatedAt: Date;
@@ -78,6 +81,19 @@ const UserSchema = new mongoose.Schema<IUserDoc>(
       expiresAt: {
         type: Date,
       },
+    },
+    googleId: {
+      type: String,
+    },
+
+    profileImage: {
+      type: String,
+    },
+
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     tokens: [
       {

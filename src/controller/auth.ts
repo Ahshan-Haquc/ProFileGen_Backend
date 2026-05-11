@@ -1,6 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import UserModel from "../models/userSchema";
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const userSignup = async (req: Request, res: Response, next: NextFunction) => {
   console.log("working on singup router 1");
@@ -47,24 +50,93 @@ const adminSignup = async (req: Request, res: Response): Promise<void> => {
 
 const googleLogin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, name } = req.body as { email?: string; name?: string };
+    const { credential } = req.body as { credential?: string };
+
+    if (!credential) {
+      res.status(400).json({
+        success: false,
+        message: "Google credential missing",
+      });
+      return;
+    }
+
+    // verify google token
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid Google token",
+      });
+      return;
+    }
+
+    const {
+      sub,
+      email,
+      name,
+      picture,
+    } = payload;
 
     if (!email) {
-      res.status(400).json({ success: false, message: "Email is required." });
+      res.status(400).json({
+        success: false,
+        message: "Google email not found",
+      });
       return;
     }
 
-    const existingUser = await UserModel.findOne({ email }).exec();
+    // check existing user
+    let user = await UserModel.findOne({ email }).exec();
 
-    if (existingUser) {
-      res.status(200).json({ success: true, message: "User found", user: existingUser });
-      return;
+    // create user if not exists
+    if (!user) {
+      user = await UserModel.create({
+        name,
+        email,
+        password: "GOOGLE_AUTH_USER",
+        googleId: sub,
+        profileImage: picture,
+        authProvider: "google",
+      });
     }
 
-    await new UserModel({ email, name }).save();
-    res.status(201).json({ success: true, message: "User created successfully" });
+    // generate jwt
+    const token = await user.generateToken();
+
+    // save cookie
+    res.cookie("userCookie", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      expires: new Date(Date.now() + 60 * 60 * 1000),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+      },
+    });
+
   } catch (error) {
-    res.status(500).json({ message: "server error", error });
+    console.error("Google Login Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Google login failed",
+    });
   }
 };
 
@@ -144,6 +216,6 @@ const checkAuth = (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 }
-  
 
-export { userSignup, adminSignup, googleLogin, userLogin, userLogout , checkUserAuth, checkAuth };
+
+export { userSignup, adminSignup, googleLogin, userLogin, userLogout, checkUserAuth, checkAuth };
