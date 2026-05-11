@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import UserModel from "../models/userSchema";
 import { OAuth2Client } from "google-auth-library";
+import sendMail from "../utils/sendMail";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -217,5 +218,170 @@ const checkAuth = (req: Request, res: Response, next: NextFunction) => {
   }
 }
 
+const forgotPassword = async (req: Request, res: Response) => {
+  try {
 
-export { userSignup, adminSignup, googleLogin, userLogin, userLogout, checkUserAuth, checkAuth };
+    const { email } = req.body;
+
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    // generate 6 digit otp
+    const otp = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
+
+    user.resetOtp = otp;
+
+    // 5 mins
+    user.resetOtpExpire = new Date(Date.now() + 5 * 60 * 1000);
+
+    await user.save();
+
+    // send email
+    await sendMail({
+      to: email,
+      subject: "Password Reset OTP - ProFileGen",
+      html: `
+        <div style="font-family:sans-serif">
+          <h2>Password Reset Request</h2>
+          <p>Your OTP code is:</p>
+
+          <h1 style="letter-spacing:4px;">
+            ${otp}
+          </h1>
+
+          <p>This OTP will expire in 5 minutes.</p>
+        </div>
+      `,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to send OTP",
+    });
+  }
+};
+
+const verifyOtp = async (req: Request, res: Response) => {
+  try {
+
+    const { email, otp } = req.body;
+
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    if (user.resetOtp !== otp) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+      return;
+    }
+
+    if (
+      !user.resetOtpExpire ||
+      user.resetOtpExpire < new Date()
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "OTP expired",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified",
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: "OTP verification failed",
+    });
+  }
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+  try {
+
+    const { email, otp, password } = req.body;
+
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    if (user.resetOtp !== otp) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+      return;
+    }
+
+    if (
+      !user.resetOtpExpire ||
+      user.resetOtpExpire < new Date()
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "OTP expired",
+      });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashedPassword;
+
+    // clear otp
+    user.resetOtp = null;
+    user.resetOtpExpire = null;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: "Password reset failed",
+    });
+  }
+};
+
+export { userSignup, adminSignup, googleLogin, userLogin, userLogout, checkUserAuth, checkAuth, forgotPassword, verifyOtp, resetPassword };
