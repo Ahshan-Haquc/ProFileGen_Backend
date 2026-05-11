@@ -36,7 +36,7 @@ app.use(
 
 app.use("/uploads", express.static("uploads"));
 app.use("/", cvRouter);
-app.use("/", authRouter);
+app.use("/auth", authRouter);
 app.use("/admin", adminRouter);
 app.use("/subscription", subscriptionRouter);
 
