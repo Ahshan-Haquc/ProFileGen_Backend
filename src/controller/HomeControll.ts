@@ -29,7 +29,7 @@ interface UpdateUserContactBody {
 
 interface UpdateUserSkillsBody {
   cvId: string;
-  skills: string[];
+  skills: Record<string, unknown>;
 }
 
 interface UpdateUserProjectsBody {
@@ -160,7 +160,22 @@ const updateUserSkills = async (
   req: Request<unknown, unknown, UpdateUserSkillsBody>,
   res: Response
 ): Promise<void> => {
-  const { cvId, skills } = req.body;
+  let { cvId, skills } = req.body;
+
+  if (!skills || typeof skills !== "object") {
+    res.status(400).json({ message: "Skills object is required" });
+    return;
+  }
+
+  if (!cvId && req.userInfo) {
+    const latestUserCV = await CVmodel.findOne({ userId: req.userInfo._id }).sort({ updatedAt: -1 }).exec();
+    cvId = latestUserCV?._id?.toString() || "";
+  }
+
+  if (!cvId) {
+    res.status(400).json({ message: "CV id is required" });
+    return;
+  }
 
   try {
     const userCV = await CVmodel.findOne({ _id: cvId }).exec();
@@ -170,7 +185,8 @@ const updateUserSkills = async (
       return;
     }
 
-    userCV.skills = skills as unknown as Record<string, unknown>;
+    userCV.skills = skills;
+    userCV.markModified("skills");
     await userCV.save();
 
     res.status(200).json({ message: "Skills updated", updatedCV: userCV });
