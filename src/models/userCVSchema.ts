@@ -71,7 +71,7 @@ const otherSectionSchema = new mongoose.Schema<IOtherSection>(
 
 const UserCVSchema = new mongoose.Schema<IUserCVDoc>(
   {
-    title: { type: String, default: `My CV - ${new Date().toLocaleDateString()}` },
+    title: { type: String, default: `Untitled CV - ${new Date().toLocaleDateString()}` },
     name: { type: String, default: "Enter Your Name" },
     profession: { type: String, default: "Enter Your Profession" },
     images: {

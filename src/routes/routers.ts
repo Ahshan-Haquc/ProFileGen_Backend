@@ -22,7 +22,7 @@ cvRouter.patch("/updateUserCvTitle", userAccessPermission, updateUserCvTitle);
 cvRouter.post("/updateUserProfile", upload.single("photo"), updateUserProfile);
 cvRouter.post("/updateUserDescription", updateDescription);
 cvRouter.post("/updateUserContact", updateUserContact);
-cvRouter.post("/updateUserSkills", updateUserSkills);
+cvRouter.post("/updateUserSkills", userAccessPermission, updateUserSkills);
 cvRouter.post("/updateUserProjects", updateUserProjects);
 
 cvRouter.post(
