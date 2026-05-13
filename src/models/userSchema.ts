@@ -21,6 +21,8 @@ export interface IUser {
   googleId?: string;
   profileImage?: string;
   authProvider: "local" | "google";
+  resetOtp: string | null;
+  resetOtpExpire: Date | null;
   tokens: { token: string }[];
   createdAt: Date;
   updatedAt: Date;
@@ -95,6 +97,15 @@ const UserSchema = new mongoose.Schema<IUserDoc>(
       enum: ["local", "google"],
       default: "local",
     },
+
+    resetOtp: {
+      type: String,
+    },
+
+    resetOtpExpire: {
+      type: Date,
+    },
+
     tokens: [
       {
         token: { type: String },
