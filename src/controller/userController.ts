@@ -53,7 +53,11 @@ const createNewCv = async (req: Request, res: Response): Promise<void> => {
     user.subscription.cvUsed += 1;
     await user.save();
 
-    const userNewCV = new CVmodel({ userId: req.userInfo._id });
+    // generate 6 digit random integer 
+    const randomId = Math.floor(100000 + Math.random() * 900000);
+    const newTitle = `Untitled CV - ${randomId}`;
+
+    const userNewCV = new CVmodel({ userId: req.userInfo._id, title: newTitle });
     const userCV = await userNewCV.save();
     res.status(201).json({ success: true, userCV, message: "Your CV file created. Now you can add info." });
   } catch (error) {
