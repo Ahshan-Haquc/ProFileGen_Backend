@@ -57,7 +57,10 @@ const createNewCv = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         }
         user.subscription.cvUsed += 1;
         yield user.save();
-        const userNewCV = new userCVSchema_1.default({ userId: req.userInfo._id });
+        // generate 6 digit random integer 
+        const randomId = Math.floor(100000 + Math.random() * 900000);
+        const newTitle = `Untitled CV - ${randomId}`;
+        const userNewCV = new userCVSchema_1.default({ userId: req.userInfo._id, title: newTitle });
         const userCV = yield userNewCV.save();
         res.status(201).json({ success: true, userCV, message: "Your CV file created. Now you can add info." });
     }

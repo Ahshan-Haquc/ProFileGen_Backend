@@ -34,7 +34,7 @@ cvRouter.patch("/updateUserCvTitle", authUserPermision_1.default, userController
 cvRouter.post("/updateUserProfile", upload_1.default.single("photo"), HomeControll_1.updateUserProfile);
 cvRouter.post("/updateUserDescription", HomeControll_1.updateDescription);
 cvRouter.post("/updateUserContact", HomeControll_1.updateUserContact);
-cvRouter.post("/updateUserSkills", HomeControll_1.updateUserSkills);
+cvRouter.post("/updateUserSkills", authUserPermision_1.default, HomeControll_1.updateUserSkills);
 cvRouter.post("/updateUserProjects", HomeControll_1.updateUserProjects);
 cvRouter.post("/updateUserExperience", (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {

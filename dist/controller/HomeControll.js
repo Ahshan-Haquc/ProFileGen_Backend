@@ -99,7 +99,20 @@ const updateUserContact = (req, res, next) => __awaiter(void 0, void 0, void 0, 
 });
 exports.updateUserContact = updateUserContact;
 const updateUserSkills = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { cvId, skills } = req.body;
+    var _a;
+    let { cvId, skills } = req.body;
+    if (!skills || typeof skills !== "object") {
+        res.status(400).json({ message: "Skills object is required" });
+        return;
+    }
+    if (!cvId && req.userInfo) {
+        const latestUserCV = yield userCVSchema_1.default.findOne({ userId: req.userInfo._id }).sort({ updatedAt: -1 }).exec();
+        cvId = ((_a = latestUserCV === null || latestUserCV === void 0 ? void 0 : latestUserCV._id) === null || _a === void 0 ? void 0 : _a.toString()) || "";
+    }
+    if (!cvId) {
+        res.status(400).json({ message: "CV id is required" });
+        return;
+    }
     try {
         const userCV = yield userCVSchema_1.default.findOne({ _id: cvId }).exec();
         if (!userCV) {
@@ -107,6 +120,7 @@ const updateUserSkills = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return;
         }
         userCV.skills = skills;
+        userCV.markModified("skills");
         yield userCV.save();
         res.status(200).json({ message: "Skills updated", updatedCV: userCV });
     }
