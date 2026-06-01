@@ -9,7 +9,7 @@ const otherSectionSchema = new mongoose_1.default.Schema({
     sectionValues: { type: [String], default: [] },
 }, { _id: false });
 const UserCVSchema = new mongoose_1.default.Schema({
-    title: { type: String, default: `My CV - ${new Date().toLocaleDateString()}` },
+    title: { type: String, default: `Untitled CV - ${new Date().toLocaleDateString()}` },
     name: { type: String, default: "Enter Your Name" },
     profession: { type: String, default: "Enter Your Profession" },
     images: {
