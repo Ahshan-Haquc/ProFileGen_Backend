@@ -17,7 +17,7 @@ Github repository link of the frontend: https://github.com/Ahshan-Haquc/ProFileG
 - CV generation limit checks and usage controls
 - Secure file upload handling
 - Email notifications for user workflows
-- Structured TypeScript codebase for maintainability
+- Structured TypeScript codebase for maintainability.
 
 ## Tech stack
 
