@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
+    "dev": "node init && ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "node init && tsc",
     "postinstall": "npm run build",
-    "start": "node dist/server.js"
+    "start": "node init && node dist/server.js"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +25,7 @@
     "mongoose": "^8.16.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.7",
     "stripe": "^22.1.0"
   },
