@@ -9,6 +9,7 @@ Live link of the project: https://profilegen-frontend.vercel.app/  <br>
 Github repository link of the frontend: https://github.com/Ahshan-Haquc/ProFileGen_Frontend
 
 
+
 ## Key features
 
 - User authentication and authorization
